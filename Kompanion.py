@@ -36,15 +36,18 @@ frm_panel = tk.Frame(
     pady=5
 )
 
+style = ttk.Style()
+style.configure('drk_bg.TLabel', foreground='white', background='#191919')
+
 # streams
 funds = conn.add_stream(getattr, conn.space_center, 'funds')
 rep = conn.add_stream(getattr, conn.space_center, 'reputation')
 sci = conn.add_stream(getattr, conn.space_center, 'science')
 
 # labels
-lbl_funds = ttk.Label(frm_topbar, text="F: " + "{:,}".format(round(funds())), foreground="white", background=drk_bg)
-lbl_rep = ttk.Label(frm_topbar, text=f"R: {round(rep(),1)}", foreground="white", background=drk_bg)
-lbl_sci = ttk.Label(frm_topbar, text="S: " + "{:,}".format(sci()), foreground="white", background=drk_bg)
+lbl_funds = ttk.Label(frm_topbar, text="F: " + "{:,}".format(round(funds())), style='drk_bg.TLabel')
+lbl_rep = ttk.Label(frm_topbar, text=f"R: {round(rep(),1)}", style='drk_bg.TLabel')
+lbl_sci = ttk.Label(frm_topbar, text="S: " + "{:,}".format(sci()), style='drk_bg.TLabel')
 
 # geometry
 lbl_funds.grid(row=0, column=0, sticky="ns", padx=5)
