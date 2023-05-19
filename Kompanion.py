@@ -10,10 +10,6 @@ conn = krpc.connect(
     stream_port=50001,
 )
 
-# color theme
-drk_bg = "#191919"
-drk_acc = "#2c2c2c"
-
 # window
 window = tk.Tk()
 window.title("Kompanion")
@@ -21,7 +17,10 @@ window.title("Kompanion")
 window.rowconfigure(1, minsize=400, weight=1)
 window.columnconfigure(0, minsize=600, weight=1)
 
+# color theme
 style = ttk.Style()
+drk_bg = "#191919"
+drk_acc = "#2c2c2c"
 
 ### topbar ###
 
@@ -31,7 +30,7 @@ rep = conn.add_stream(getattr, conn.space_center, 'reputation')
 sci = conn.add_stream(getattr, conn.space_center, 'science')
 
 # styles
-style.configure('drk_bg.TLabel', foreground='white', background='#191919')
+style.configure('topbar.TLabel', foreground='white', background=drk_bg, padx=10, pady=10)
 
 # frames
 frm_topbar = tk.Frame(
@@ -42,11 +41,12 @@ frm_topbar = tk.Frame(
 )
 
 # labels
-lbl_funds = ttk.Label(frm_topbar, text="F: " + "{:,}".format(round(funds())), style='drk_bg.TLabel')
-lbl_rep = ttk.Label(frm_topbar, text=f"R: {round(rep(),1)}", style='drk_bg.TLabel')
-lbl_sci = ttk.Label(frm_topbar, text="S: " + "{:,}".format(sci()), style='drk_bg.TLabel')
+lbl_funds = ttk.Label(frm_topbar, text="F: " + "{:,}".format(round(funds())), style='topbar.TLabel')
+lbl_rep = ttk.Label(frm_topbar, text=f"R: {round(rep(),1)}", style='topbar.TLabel')
+lbl_sci = ttk.Label(frm_topbar, text="S: " + "{:,}".format(sci()), style='topbar.TLabel')
 
 # geometry
+frm_topbar.grid(row=0, column=0, sticky="nsew")
 lbl_funds.grid(row=0, column=0, sticky="ns", padx=5)
 lbl_rep.grid(row=0, column=1, sticky="ns", padx=5)
 lbl_sci.grid(row=0, column=2, sticky="ns", padx=5)
@@ -76,7 +76,7 @@ frm_panel = tk.Frame(
     pady=5
 )
 
-frm_topbar.grid(row=0, column=0, sticky="nsew")
+# geometry
 frm_panel.grid(row=1, column=0, sticky="nsew")
 
 window.mainloop()
