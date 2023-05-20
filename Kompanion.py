@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from PIL import ImageTk, Image
 import krpc
 
 # connection
@@ -17,79 +18,117 @@ gm = str(conn.space_center.game_mode)
 window = tk.Tk()
 window.title("Kompanion")
 
-window.rowconfigure(1, minsize=400, weight=1)
-window.columnconfigure(0, minsize=600, weight=1)
+window.rowconfigure(1, minsize=300, weight=1)
+window.columnconfigure(0, minsize=250, weight=1)
 
 # theming
 style = ttk.Style()
+default_font = 'TkDefaultFont'
 drk_bg = "#191919"
 drk_acc = "#2c2c2c"
 
 ### --- TOPBAR --- ###
 
+# icons
+open_icn_funds_img = Image.open('./icons/icn_funds.png')
+resize_icn_funds_img = open_icn_funds_img.resize((16,16))
+icn_funds_img = ImageTk.PhotoImage(resize_icn_funds_img)
+
+open_icn_rep_img = Image.open('./icons/icn_rep.png')
+resize_icn_rep_img = open_icn_rep_img.resize((16,16))
+icn_rep_img = ImageTk.PhotoImage(resize_icn_rep_img)
+
+open_icn_sci_img = Image.open('./icons/icn_sci.png')
+resize_icn_sci_img = open_icn_sci_img.resize((16,16))
+icn_sci_img = ImageTk.PhotoImage(resize_icn_sci_img)
+
 # define widgets
 def wgt_funds():
     funds = conn.add_stream(getattr, conn.space_center, 'funds')
-    lbl_funds = ttk.Label(frm_topbar, text="F: " + "{:,}".format(round(funds())), style='topbar.TLabel')
-    lbl_funds.grid(row=0, column=1, sticky="ns", padx=5)
+
+    frm_funds = tk.Frame(frm_topbar_wgt, bg=drk_bg, padx=5)
+    frm_funds.grid(row=0, column=0, padx=5)
+
+    icn_funds = tk.Label(frm_funds, image=icn_funds_img, borderwidth=0)
+    icn_funds.grid(row=0, column=0)
+
+    lbl_funds = ttk.Label(frm_funds, text="{:,}".format(round(funds())), style='topbar.TLabel')
+    lbl_funds.grid(row=0, column=1, padx=2)
 
     def check_funds(x):
-        lbl_funds['text'] = "F: " + "{:,}".format(round(funds()))
+        lbl_funds['text'] = "{:,}".format(round(funds()))
 
     funds.add_callback(check_funds)
 
 def wgt_reputation():
     rep = conn.add_stream(getattr, conn.space_center, 'reputation')
-    lbl_rep = ttk.Label(frm_topbar, text=f"R: {round(rep(),1)}", style='topbar.TLabel')
-    lbl_rep.grid(row=0, column=2, sticky="ns", padx=5)
+
+    frm_rep = tk.Frame(frm_topbar_wgt, bg=drk_bg)
+    frm_rep.grid(row=0, column=1, padx=5)
+
+    icn_rep = tk.Label(frm_rep, image=icn_rep_img, borderwidth=0)
+    icn_rep.grid(row=0, column=0)
+
+    lbl_rep = ttk.Label(frm_rep, text=round(rep(),1), style='topbar.TLabel')
+    lbl_rep.grid(row=0, column=1, padx=5)
 
     def check_rep(x):
-        lbl_rep['text'] = f"R: {round(rep(),1)}"
+        lbl_rep['text'] = round(rep(),1)
 
     rep.add_callback(check_rep)
 
 def wgt_science():
     sci = conn.add_stream(getattr, conn.space_center, 'science')
-    lbl_sci = ttk.Label(frm_topbar, text="S: " + "{:,}".format(sci()), style='topbar.TLabel')
-    lbl_sci.grid(row=0, column=3, sticky="ns", padx=5)
+
+    frm_sci = tk.Frame(frm_topbar_wgt, bg=drk_bg)
+    frm_sci.grid(row=0, column=2, padx=5)
+
+    icn_sci = tk.Label(frm_sci, image=icn_sci_img, borderwidth=0)
+    icn_sci.grid(row=0, column=0)
+
+    lbl_sci = ttk.Label(frm_sci, text="{:,}".format(sci()), style='topbar.TLabel')
+    lbl_sci.grid(row=0, column=3, padx=3)
 
     def check_sci(x):
-        lbl_sci['text'] = "S: " + "{:,}".format(sci())
+        lbl_sci['text'] = "{:,}".format(sci())
 
     sci.add_callback(check_sci)
 
 # set style
-style.configure('topbar.TLabel', foreground='white', background=drk_bg, padx=10, pady=10)
+style.configure(
+    'topbar.TLabel',
+    foreground='white',
+    background=drk_bg,
+    font=(default_font, 10)
+)
 
-# add frame
+# add frame to window
 frm_topbar = tk.Frame(
     window,
     bg=drk_bg,
-    padx=10,
-    pady=10
+    padx=8,
+    pady=8,
 )
 
-frm_topbar.grid(row=0, column=0, sticky="nsew")
+frm_topbar.grid(row=0, column=0, sticky="ew")
+frm_topbar.columnconfigure(0, weight=1)
 
-# add mode label
-lbl_game_mode = ttk.Label(frm_topbar, text="", style='topbar.TLabel')
-lbl_game_mode.grid(row=0, column=0, sticky="ns", padx=5)
+# add widgets to topbar
+frm_topbar_wgt = tk.Frame(
+    frm_topbar,
+    bg=drk_bg
+)
+
+frm_topbar_wgt.grid(row=0, column=0)
 
 # set relevant game mode widgets
 if gm == 'GameMode.career':
-    lbl_game_mode['text'] = 'Career'
     wgt_funds(),
     wgt_reputation(),
     wgt_science()
 
 elif gm == 'GameMode.science_sandbox':
-    lbl_game_mode['text'] = 'Science'
     wgt_science()
-
-elif gm == 'GameMode.sandbox':
-    lbl_game_mode['text'] = 'Sandbox'
-
-else: lbl_game_mode['text'] = gm
 
 ### --- MAIN PANEL --- ###
 
