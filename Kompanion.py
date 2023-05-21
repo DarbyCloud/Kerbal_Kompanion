@@ -17,6 +17,7 @@ gm = str(conn.space_center.game_mode)
 # window
 window = tk.Tk()
 window.title("Kompanion")
+window.geometry('300x350+50+50')
 
 window.rowconfigure(1, minsize=300, weight=1)
 window.columnconfigure(0, minsize=250, weight=1)
@@ -30,17 +31,9 @@ drk_acc = "#2c2c2c"
 ### --- TOPBAR --- ###
 
 # icons
-open_icn_funds_img = Image.open('./icons/icn_funds.png')
-resize_icn_funds_img = open_icn_funds_img.resize((16,16))
-icn_funds_img = ImageTk.PhotoImage(resize_icn_funds_img)
-
-open_icn_rep_img = Image.open('./icons/icn_rep.png')
-resize_icn_rep_img = open_icn_rep_img.resize((16,16))
-icn_rep_img = ImageTk.PhotoImage(resize_icn_rep_img)
-
-open_icn_sci_img = Image.open('./icons/icn_sci.png')
-resize_icn_sci_img = open_icn_sci_img.resize((16,16))
-icn_sci_img = ImageTk.PhotoImage(resize_icn_sci_img)
+icn_funds_img = ImageTk.PhotoImage(Image.open('./icons/icn_funds.png').resize((16,16)))
+icn_rep_img = ImageTk.PhotoImage(Image.open('./icons/icn_rep.png').resize((16,16)))
+icn_sci_img = ImageTk.PhotoImage(Image.open('./icons/icn_sci.png').resize((16,16)))
 
 # define widgets
 def wgt_funds():
