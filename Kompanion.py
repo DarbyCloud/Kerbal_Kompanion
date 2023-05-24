@@ -1,136 +1,83 @@
+# from tkinter import *
 import customtkinter as ctk
 from PIL import Image
 import krpc
 
-# connection
-conn = krpc.connect(
-    name='Kompanion',
-    address='127.0.0.1',
-    rpc_port=50000,
-    stream_port=50001,
-)
+class connect_ksp(ctk.CTk):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.title('Kompanion - Connect')
+        self.resizable(False, False)
+        self.columnconfigure(0, minsize=300)
+        self.eval('tk::PlaceWindow . center')
 
-# game mode
-gm = str(conn.space_center.game_mode)
+        frame = ctk.CTkFrame(self)
+        frame.grid(row=0, column=0, padx=20, pady=20, sticky='nsew')
+        frame.columnconfigure(0, weight=1)
 
-# colors
-clr_window = '#191919'
+        host_frame = ctk.CTkFrame(frame, fg_color='transparent')
+        host_frame.grid(row=0, column=0, padx=10, pady=(10,0), sticky='ew')
+        host_frame.columnconfigure(0, weight=1)
 
-# window
-window = ctk.CTk()
-window.title('Kompanion')
-window_width = 500
-window_height = 350
-window.geometry('%dx%d+1970+-400' % (window_width, window_height))
-window.configure(fg_color = (clr_window))
-window.columnconfigure(0, weight=1)
-window.rowconfigure(1, weight=1)
+        host_input_frame = ctk.CTkFrame(host_frame, fg_color='transparent')
 
-######################################## --- TOPBAR --- ########################################
+        def host_dropdown_callback(choice):
+            if choice == 'Localhost':
+                host = '127.0.0.1'
+                host_input_frame.grid_remove()
+            elif choice == 'LAN/WAN':
+                host_input_frame.grid(row=1, column=0, padx=5, sticky='ew')
+                host_input_frame.columnconfigure(0, weight=1)
 
-frm_topbar = ctk.CTkFrame(window)
-frm_topbar.grid(row=0, column=0, padx=5, pady=5, sticky='ew')
-frm_topbar.columnconfigure(0, weight=1)
+                host_entry = ctk.CTkEntry(host_input_frame, placeholder_text='Address', justify='center')
+                host_entry.grid(row=0, column=0, pady=(0,5), sticky='ew')
 
-### --- ASSETS WIDGET --- ###
+                subnet_entry = ctk.CTkEntry(host_input_frame, placeholder_text='Subnet', justify='center')
+                subnet_entry.grid(row=1, column=0, pady=(0,5), sticky='ew')
 
-frm_topbar_wgt = ctk.CTkFrame(frm_topbar,
-    # fg_color='transparent'
-    fg_color=clr_window
-)
+        host_dropdown = ctk.CTkOptionMenu(host_frame, values=['Localhost', 'LAN/WAN'], anchor='center', command=host_dropdown_callback)
+        host_dropdown.grid(row=0, column=0, pady=(0,5), sticky='ew')
 
-frm_topbar_wgt.grid(row=0, column=0, padx=5, pady=5, sticky='ns')
-frm_topbar_wgt.columnconfigure(0, weight=1)
+        port_frame = ctk.CTkFrame(frame, fg_color='transparent')
+        port_frame.grid(row=1, column=0, padx=10, pady=(0,5), sticky='ew')
+        port_frame.columnconfigure(0, weight=1)
 
-asset_wgt_size = 18
-asset_wgt_font = ctk.CTkFont(size=asset_wgt_size)
+        port_input_frame = ctk.CTkFrame(port_frame, fg_color='transparent')
 
-asset_wgt_icn_x = asset_wgt_size
-asset_wgt_icn_y = asset_wgt_icn_x
-asset_wgt_icn_x_y = (asset_wgt_icn_x, asset_wgt_icn_y)
+        def port_dropdown_callback(choice):
+            if choice == 'Default Ports':
+                rpc_port = 50000
+                stream_port = 50001
+                port_input_frame.grid_remove()
+            elif choice == 'Custom Ports':
+                port_input_frame.grid(row=1, column=0, padx=5, sticky='ew')
+                port_input_frame.columnconfigure(0, weight=1)
 
-asset_wgt_icn_funds = ctk.CTkImage(Image.open('icons/icn_funds.png'), size=(asset_wgt_icn_x_y))
-asset_wgt_icn_rep = ctk.CTkImage(Image.open('icons/icn_rep.png'), size=(asset_wgt_icn_x_y))
-asset_wgt_icn_sci = ctk.CTkImage(Image.open('icons/icn_sci.png'), size=(asset_wgt_icn_x_y))
+                rpc_port_entry = ctk.CTkEntry(port_input_frame, placeholder_text='RPC Port', justify='center')
+                rpc_port_entry.grid(row=0, column=0, pady=(0,5), sticky='ew')
 
-# define widgets
-def wgt_funds():
-    funds = conn.add_stream(getattr, conn.space_center, 'funds')
+                ent_port_stream = ctk.CTkEntry(port_input_frame, placeholder_text='Stream Port', justify='center')
+                ent_port_stream.grid(row=1, column=0, pady=(0,5), sticky='ew')
 
-    lbl_funds = ctk.CTkLabel(
-        frm_topbar_wgt,
-        text="{:,}".format(round(funds())),
-        image=asset_wgt_icn_funds,
-        compound='left',
-        font=asset_wgt_font,
-        padx=5,
-        pady=5
-    )
+        ports_dropdown = ctk.CTkOptionMenu(port_frame, values=['Default Ports', 'Custom Ports'], anchor='center', command=port_dropdown_callback)
+        ports_dropdown.grid(row=0, column=0, pady=(0,5), sticky='ew')
 
-    lbl_funds.grid(row=0, column=0, padx=5)
+        btn_connect = ctk.CTkButton(frame, text='Connect')
+        btn_connect.grid(row=2, column=0, pady=(0,10))
 
-    def check_funds(x):
-        lbl_funds.configure(text="{:,}".format(round(funds())))
+        # # connection
+        # ksp = krpc.connect(
+        #     name='Kompanion',
+        #     address=host,
+        #     rpc_port=50000,
+        #     stream_port=50001,
+        # )
 
-    funds.add_callback(check_funds)
+# # game mode
+# gm = str(ksp.space_center.game_mode)
 
-def wgt_reputation():
-    rep = conn.add_stream(getattr, conn.space_center, 'reputation')
-
-    lbl_rep = ctk.CTkLabel(
-        frm_topbar_wgt,
-        text=round(rep(),1),
-        image=asset_wgt_icn_rep,
-        compound='left',
-        font=asset_wgt_font,
-        padx=5,
-        pady=5
-    )
-
-    lbl_rep.grid(row=0, column=1, padx=5)
-
-    def check_rep(x):
-        lbl_rep.configure(text = round(rep(),1))
-
-    rep.add_callback(check_rep)
-
-def wgt_science():
-    sci = conn.add_stream(getattr, conn.space_center, 'science')
-
-    lbl_sci = ctk.CTkLabel(
-        frm_topbar_wgt,
-        text="{:,}".format(sci()),
-        image=asset_wgt_icn_sci,
-        compound='left',
-        font=asset_wgt_font,
-        padx=5,
-        pady=5
-    )
-
-    lbl_sci.grid(row=0, column=2, padx=5)
-
-    def check_sci(x):
-        lbl_sci.configure(text = "{:,}".format(sci()))
-
-    sci.add_callback(check_sci)
-
-# set relevant game mode widgets
-if gm == 'GameMode.career':
-    wgt_funds(),
-    wgt_reputation(),
-    wgt_science()
-
-elif gm == 'GameMode.science_sandbox':
-    wgt_science()
-
-######################################## --- MAIN PANEL --- ########################################
-
-frm_panel = ctk.CTkFrame(window, 
-    # fg_color=clr_panels
-    fg_color='transparent'
-)
-
-frm_panel.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
-
-# run gui
-window.mainloop()
+# run
+connection = connect_ksp()
+connection.mainloop()
+# app = app()
+# app.mainloop()
