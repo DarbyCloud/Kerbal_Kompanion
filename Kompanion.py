@@ -3,7 +3,7 @@ from PIL import Image
 import krpc
 
 # connection
-conn = krpc.connect(
+ksp = krpc.connect(
     name='Kompanion',
     address='127.0.0.1',
     rpc_port=50000,
@@ -11,7 +11,7 @@ conn = krpc.connect(
 )
 
 # game mode
-gm = str(conn.space_center.game_mode)
+gm = str(ksp.space_center.game_mode)
 
 # colors
 clr_window = '#191919'
@@ -34,94 +34,56 @@ frm_topbar.columnconfigure(0, weight=1)
 
 ### --- ASSETS WIDGET --- ###
 
-frm_topbar_wgt = ctk.CTkFrame(frm_topbar,
+wgt_assets = ctk.CTkFrame(frm_topbar,
     # fg_color='transparent'
     fg_color=clr_window
 )
 
-frm_topbar_wgt.grid(row=0, column=0, padx=5, pady=5, sticky='ns')
-frm_topbar_wgt.columnconfigure(0, weight=1)
+wgt_assets.grid(row=0, column=0, padx=5, pady=5, sticky='ns')
+wgt_assets.columnconfigure(0, weight=1)
 
-asset_wgt_size = 18
-asset_wgt_font = ctk.CTkFont(size=asset_wgt_size)
+class asset_widget:
+    def __init__(self, asset, pos):
+        self.asset = asset
+        self.pos = pos
 
-asset_wgt_icn_x = asset_wgt_size
-asset_wgt_icn_y = asset_wgt_icn_x
-asset_wgt_icn_x_y = (asset_wgt_icn_x, asset_wgt_icn_y)
+        stream = ksp.add_stream(getattr, ksp.space_center, asset)
+    
+        if asset == 'funds':
+            asset_txt = "{:,}".format(round(stream()))
+        elif asset == 'reputation':
+            asset_txt = round(stream(),1)
+        elif asset == 'science':
+            asset_txt = "{:,}".format(stream())
 
-asset_wgt_icn_funds = ctk.CTkImage(Image.open('icons/icn_funds.png'), size=(asset_wgt_icn_x_y))
-asset_wgt_icn_rep = ctk.CTkImage(Image.open('icons/icn_rep.png'), size=(asset_wgt_icn_x_y))
-asset_wgt_icn_sci = ctk.CTkImage(Image.open('icons/icn_sci.png'), size=(asset_wgt_icn_x_y))
+        asset_icn = ctk.CTkImage(Image.open('icons/icn_' + asset + '.png'), size=(18,18))
 
-# define widgets
-def wgt_funds():
-    funds = conn.add_stream(getattr, conn.space_center, 'funds')
+        label = ctk.CTkLabel(
+            wgt_assets,
+            text=asset_txt,
+            image=asset_icn,
+            compound='left',
+            # font=18,
+            padx=5,
+            pady=5
+        )
 
-    lbl_funds = ctk.CTkLabel(
-        frm_topbar_wgt,
-        text="{:,}".format(round(funds())),
-        image=asset_wgt_icn_funds,
-        compound='left',
-        font=asset_wgt_font,
-        padx=5,
-        pady=5
-    )
+        label.grid(row=0, column=pos, padx=5)
 
-    lbl_funds.grid(row=0, column=0, padx=5)
+        def check_asset(x):
+            if asset == 'funds':
+                label.configure(text="{:,}".format(round(stream())))
+            elif asset == 'reputation':
+                label.configure(text=round(stream(),1))
+            elif asset == 'science':
+                label.configure(text="{:,}".format(stream()))
 
-    def check_funds(x):
-        lbl_funds.configure(text="{:,}".format(round(funds())))
-
-    funds.add_callback(check_funds)
-
-def wgt_reputation():
-    rep = conn.add_stream(getattr, conn.space_center, 'reputation')
-
-    lbl_rep = ctk.CTkLabel(
-        frm_topbar_wgt,
-        text=round(rep(),1),
-        image=asset_wgt_icn_rep,
-        compound='left',
-        font=asset_wgt_font,
-        padx=5,
-        pady=5
-    )
-
-    lbl_rep.grid(row=0, column=1, padx=5)
-
-    def check_rep(x):
-        lbl_rep.configure(text = round(rep(),1))
-
-    rep.add_callback(check_rep)
-
-def wgt_science():
-    sci = conn.add_stream(getattr, conn.space_center, 'science')
-
-    lbl_sci = ctk.CTkLabel(
-        frm_topbar_wgt,
-        text="{:,}".format(sci()),
-        image=asset_wgt_icn_sci,
-        compound='left',
-        font=asset_wgt_font,
-        padx=5,
-        pady=5
-    )
-
-    lbl_sci.grid(row=0, column=2, padx=5)
-
-    def check_sci(x):
-        lbl_sci.configure(text = "{:,}".format(sci()))
-
-    sci.add_callback(check_sci)
+        stream.add_callback(check_asset)
 
 # set relevant game mode widgets
-if gm == 'GameMode.career':
-    wgt_funds(),
-    wgt_reputation(),
-    wgt_science()
-
-elif gm == 'GameMode.science_sandbox':
-    wgt_science()
+asset_widget('funds', 0)
+asset_widget('reputation', 1)
+asset_widget('science', 2)
 
 ######################################## --- MAIN PANEL --- ########################################
 
