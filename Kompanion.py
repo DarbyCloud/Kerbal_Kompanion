@@ -2,6 +2,8 @@ import customtkinter as ctk
 from PIL import Image
 import krpc
 
+app_name = 'Kompanion'
+
 class Connect_KSP(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
@@ -33,7 +35,7 @@ class Connect_KSP(ctk.CTkFrame):
             try:
                 global ksp
                 ksp = krpc.connect(
-                    name='Kompanion',
+                    name=app_name,
                     address=ksp_host,
                     rpc_port=int(ksp_rpc_port),
                     stream_port=int(ksp_stream_port)
@@ -55,7 +57,8 @@ class Connect_KSP(ctk.CTkFrame):
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title('Kompanion')
+        self.title(app_name)
+        self.iconbitmap('icons/favicon.ico')
         self.eval('tk::PlaceWindow . center')
 
         self.rowconfigure(0, weight=1)
