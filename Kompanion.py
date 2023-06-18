@@ -9,15 +9,23 @@ class App(ctk.CTk):
         super().__init__()
         self.title(app_name)
         self.iconbitmap('icons/favicon.ico')
-        # self.minsize(width=280, height=220)
-        # self.geometry('280x220')
-        self.eval('tk::PlaceWindow . center')
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()-80
+        self.geometry(f'{screen_width}x{screen_height}+0+0')
+        self.minsize(width=screen_width, height=screen_height)
+        self.maxsize(width=screen_width, height=screen_height+80)
+        self.state('zoomed')
+        self.update()
 
-        self.rowconfigure(0, weight=1)
+        # self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
+        self.image = ctk.CTkImage(Image.open('icons/Kompanion_logo.png'), size=(260,260))
+        self.image_label = ctk.CTkLabel(self, image=self.image, text='')
+        self.image_label.grid(row=0, column=0, pady=(100,0))
+
         self.connection_frame = ctk.CTkFrame(self)
-        self.connection_frame.grid(row=0, column=0, padx=20, pady=20)
+        self.connection_frame.grid(row=1, column=0, padx=20, pady=20)
 
         self.label = ctk.CTkLabel(self.connection_frame, text='Connect to KSP:')
         self.label.grid(row=0, column=0, padx=5, pady=5)
@@ -51,35 +59,79 @@ class App(ctk.CTk):
                     stream_port=int(ksp_stream_port)
                 )
 
+            except:
+                self.error_label.grid(row=4, column=0)
+
+            else:
                 game_mode = str(ksp.space_center.game_mode)
 
                 self.connection_frame.grid_remove()
-                self.state('zoomed')
-                self.update()
 
                 main_app = ctk.CTkFrame(self, fg_color='transparent')
                 main_app.columnconfigure(0, weight=1)
                 main_app.grid(row=0, column=0, sticky='nsew')
-                print(game_mode)
 
                 top_bar = ctk.CTkFrame(main_app)
                 top_bar.grid(row=0, column=0, padx=10, pady=10, sticky='ew')
 
-                # class Main_app(ctk.CTkFrame):
-                #     def __init__(self, master):
-                #         super().__init__(master)
+                ########## --- ASSETS WIDGET --- ##########
+                asset_widget = ctk.CTkFrame(top_bar, fg_color='transparent')
+                asset_widget.pack(pady=5)
 
-                #         self.rowconfigure(0, weight=1)
-                #         self.columnconfigure(0, weight=1)
-                #         self.grid(row=0, column=0, padx=20, pady=20, sticky='nsew')
+                def asset(asset_type):
+                    size = 24
+                    font_size = ctk.CTkFont(size=size)
+                    icon_size = (size,size)
 
-                #         print(game_mode)
+                    stream = ksp.add_stream(getattr, ksp.space_center, asset_type)
 
-                # Main_app(main_app)
+                    if asset_type == 'funds':
+                        asset_text = "{:,}".format(round(stream()))
+                    elif asset_type == 'reputation':
+                        asset_text = round(stream(),2)
+                    elif asset_type == 'science':
+                        asset_text = "{:,}".format(stream())
 
-            except:
-                self.error_label.grid(row=4, column=0)
-            
+                    asset_icon = ctk.CTkImage(Image.open('icons/icon_' + asset_type + '.png'), size=icon_size)
+
+                    label = ctk.CTkLabel(
+                        asset_widget,
+                        text=asset_text,
+                        image=asset_icon,
+                        compound='left',
+                        font=font_size,
+                        padx=5,
+                        pady=5
+                    )
+
+                    label.pack(side='left', padx=10)
+
+                    def check_asset(x):
+                        def check_negative():
+                            if x < 0:
+                                label.configure(text_color='red')
+                            else:
+                                label.configure(text_color='white')
+
+                        if asset_type == 'funds':
+                            label.configure(text="{:,}".format(round(stream())))
+                            check_negative()
+                        elif asset_type == 'reputation':
+                            label.configure(text=round(stream(),2))
+                            check_negative()
+                        elif asset_type == 'science':
+                            label.configure(text="{:,}".format(stream()))
+                            check_negative()
+
+                    stream.add_callback(check_asset)
+
+                if game_mode == 'GameMode.career':
+                    career_assets = ['funds', 'reputation', 'science']
+                    for i in career_assets:
+                        asset(i)
+                elif game_mode == 'GameMode.science_sandbox':
+                    asset('science')
+
         self.connect_button = ctk.CTkButton(self.input, text='Connect', command=connect)
         self.connect_button.grid(row=3, column=0, padx=10, pady=(10,5))
 
