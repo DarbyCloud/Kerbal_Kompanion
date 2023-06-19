@@ -1,5 +1,7 @@
 import customtkinter as ctk
 from PIL import Image
+import threading
+from time import sleep
 import krpc
 
 app_name = 'Kompanion'
@@ -9,22 +11,32 @@ class App(ctk.CTk):
         super().__init__()
         self.title(app_name)
         self.iconbitmap('icons/favicon.ico')
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()-80
-        self.geometry(f'{screen_width}x{screen_height}+0+0')
-        self.minsize(width=screen_width, height=screen_height)
-        self.maxsize(width=screen_width, height=screen_height+80)
-        self.state('zoomed')
-        self.update()
 
-        # self.rowconfigure(0, weight=1)
+        self.width = 450
+        self.height = 600
+
+        self.minsize(width=self.width, height=self.height)
+        # max_size = self.maxsize(width=screen_width, height=screen_height+80)
+
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        x = (screen_width/2) - (self.width/2)
+        y = (screen_height/2) - (self.height/2)
+
+        self.geometry(f'{self.width}x{self.height}+{int(x)}+{int(y)}')
+
         self.columnconfigure(0, weight=1)
 
-        self.image = ctk.CTkImage(Image.open('icons/Kompanion_logo.png'), size=(260,260))
-        self.image_label = ctk.CTkLabel(self, image=self.image, text='')
-        self.image_label.grid(row=0, column=0, pady=(100,0))
+        self.connection_screen = ctk.CTkFrame(self, fg_color='transparent')
+        self.connection_screen.columnconfigure(0, weight=1)
+        self.connection_screen.grid(row=0, column=0, sticky='nsew')
 
-        self.connection_frame = ctk.CTkFrame(self)
+        self.image = ctk.CTkImage(Image.open('icons/Kompanion_logo.png'), size=(260,260))
+        self.image_label = ctk.CTkLabel(self.connection_screen, image=self.image, text='')
+        self.image_label.grid(row=0, column=0, pady=(50,0))
+
+        self.connection_frame = ctk.CTkFrame(self.connection_screen)
         self.connection_frame.grid(row=1, column=0, padx=20, pady=20)
 
         self.label = ctk.CTkLabel(self.connection_frame, text='Connect to KSP:')
@@ -63,9 +75,12 @@ class App(ctk.CTk):
                 self.error_label.grid(row=4, column=0)
 
             else:
+                self.state('zoomed')
+                self.update()
+
                 game_mode = str(ksp.space_center.game_mode)
 
-                self.connection_frame.grid_remove()
+                self.connection_screen.grid_remove()
 
                 main_app = ctk.CTkFrame(self, fg_color='transparent')
                 main_app.columnconfigure(0, weight=1)
@@ -131,6 +146,25 @@ class App(ctk.CTk):
                         asset(i)
                 elif game_mode == 'GameMode.science_sandbox':
                     asset('science')
+                ##########
+
+                def check_connection():
+                    while True:
+                        try:
+                            ksp.krpc.get_status().version
+                            sleep(5)
+
+                        except:
+                            main_app.grid_remove()
+                            self.connection_screen.grid(row=0, column=0, sticky='nsew')
+                            self.error_label.configure(text='Lost connection to server')
+                            sleep(5)
+                            self.error_label.grid_remove()
+                            break
+
+                con = threading.Thread(name='check_connection', target=check_connection)
+                con.daemon = True
+                con.start()
 
         self.connect_button = ctk.CTkButton(self.input, text='Connect', command=connect)
         self.connect_button.grid(row=3, column=0, padx=10, pady=(10,5))
