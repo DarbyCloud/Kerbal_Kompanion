@@ -3,8 +3,13 @@ from PIL import Image
 import threading
 from time import sleep
 import krpc
+from configparser import ConfigParser
 
 app_name = 'Kompanion'
+
+config = ConfigParser()
+config_file = 'settings.ini'
+config.read(config_file)
 
 class App(ctk.CTk):
     def __init__(self):
@@ -14,17 +19,16 @@ class App(ctk.CTk):
 
         self.width = 450
         self.height = 600
-
         self.minsize(width=self.width, height=self.height)
-        # max_size = self.maxsize(width=screen_width, height=screen_height+80)
 
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
+        self.screen_width = self.winfo_screenwidth()
+        self.screen_height = self.winfo_screenheight()
+        self.maxsize(width=self.screen_width, height=self.screen_height)
 
-        x = (screen_width/2) - (self.width/2)
-        y = (screen_height/2) - (self.height/2)
+        self.start_x = (self.screen_width/2) - (self.width/2)
+        self.start_y = (self.screen_height/2) - (self.height/2)
 
-        self.geometry(f'{self.width}x{self.height}+{int(x)}+{int(y)}')
+        self.geometry(f'{self.width}x{self.height}+{int(self.start_x)}+{int(self.start_y)}')
 
         self.columnconfigure(0, weight=1)
 
@@ -48,15 +52,15 @@ class App(ctk.CTk):
 
         self.address_entry = ctk.CTkEntry(self.input, placeholder_text='Address', justify='center')
         self.address_entry.grid(row=0, column=0, pady=(0,5), sticky='ew')
-        self.address_entry.insert(0, '127.0.0.1') # localhost as default
+        self.address_entry.insert(0, config['connection']['address']) # localhost as default
 
         self.rpc_port_entry = ctk.CTkEntry(self.input, placeholder_text='RPC Port', justify='center')
         self.rpc_port_entry.grid(row=1, column=0, pady=(0,5), sticky='ew')
-        self.rpc_port_entry.insert(0, '50000') # default port
+        self.rpc_port_entry.insert(0, config['connection']['rpc_port']) # default port
 
         self.stream_port_entry = ctk.CTkEntry(self.input, placeholder_text='Stream Port', justify='center')
         self.stream_port_entry.grid(row=2, column=0, sticky='ew')
-        self.stream_port_entry.insert(0, '50001') # default port
+        self.stream_port_entry.insert(0, config['connection']['stream_port']) # default port
 
         def connect():
             ksp_host = self.address_entry.get()
@@ -75,6 +79,17 @@ class App(ctk.CTk):
                 self.error_label.grid(row=4, column=0)
 
             else:
+                def save_connection():
+                    conn = config['connection']
+                    conn['address'] = ksp_host
+                    conn['rpc_port'] = ksp_rpc_port
+                    conn['stream_port'] = ksp_stream_port
+
+                    with open(config_file, 'w') as configfile:
+                        config.write(configfile)
+
+                save_connection()
+
                 self.state('zoomed')
                 self.update()
 
