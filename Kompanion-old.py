@@ -36,7 +36,7 @@ class App(ctk.CTk):
         self.connection_screen.columnconfigure(0, weight=1)
         self.connection_screen.grid(row=0, column=0, sticky='nsew')
 
-        self.image = ctk.CTkImage(Image.open('icons/Kompanion_logo.png'), size=(260,260))
+        self.image = ctk.CTkImage(Image.open('icons/logo.png'), size=(260,260))
         self.image_label = ctk.CTkLabel(self.connection_screen, image=self.image, text='')
         self.image_label.grid(row=0, column=0, pady=(50,0))
 
