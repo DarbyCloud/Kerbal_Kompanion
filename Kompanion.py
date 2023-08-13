@@ -15,11 +15,11 @@ connection = config['connection']
 class ConnectWidget(CTkFrame):
     def __init__(self, master):
         super().__init__(master)
-        self.configure(fg_color = 'transparent')
+        self.configure(fg_color='transparent')
 
         # add logo
-        self.image = CTkImage(Image.open('icons/logo.png'), size = (260, 260))
-        self.image_label = CTkLabel(self, image = self.image, text = '').pack(pady = (50, 0))
+        self.image = CTkImage(Image.open('icons/logo.png'), size=(260, 260))
+        self.image_label = CTkLabel(self, image=self.image, text='').pack(pady=(50, 0))
 
         # add input
         self.input()
@@ -27,8 +27,8 @@ class ConnectWidget(CTkFrame):
     # construct and return frame with entries and button
     def input(self):
         def entry(placeholder, value):
-            entry = CTkEntry(frame, width = 250, placeholder_text = placeholder, justify = 'center')
-            entry.pack(padx = 20, pady = (0, 5))
+            entry = CTkEntry(frame, width=250, placeholder_text=placeholder, justify='center')
+            entry.pack(padx=20, pady=(0, 5))
             entry.insert(0, value)
             return entry
         
@@ -37,8 +37,8 @@ class ConnectWidget(CTkFrame):
         frame.pack()
 
         # add label
-        label = CTkLabel(frame, text = 'kRPC Server:')
-        label.pack(pady = 5)
+        label = CTkLabel(frame, text='kRPC Server:')
+        label.pack(pady=5)
 
         # add entry boxes
         global address_entry, rpc_port_entry, stream_port_entry
@@ -54,19 +54,18 @@ class ConnectWidget(CTkFrame):
             fg_color = '#84bd08',
             hover_color = '#425e04',
             command = ConnectWidget.connect)
-        connect_button.pack(pady = (5, 15))
+        connect_button.pack(pady=(5, 15))
 
         return frame
 
     def connect():
         # get entry values
         ksp_address = address_entry.get()
-        ksp_rpc_port =  rpc_port_entry.get()
-        ksp_stream_port =  stream_port_entry.get()
+        ksp_rpc_port = rpc_port_entry.get()
+        ksp_stream_port = stream_port_entry.get()
 
         # save entry values to setting file
         def save_connection():
-            # connection['address'] = ksp_address
             connection['address'] = ksp_address
             connection['rpc_port'] = ksp_rpc_port
             connection['stream_port'] = ksp_stream_port
@@ -83,9 +82,11 @@ class ConnectWidget(CTkFrame):
                     ksp.krpc.get_status().version
                     sleep(5)
                 except ConnectionAbortedError:
-                    connect.pack(expand = True, fill = 'both')
-                    eh = ErrorHandler(connect)
-                    eh.pack(pady = 5)
+                    connect.pack(expand=True, fill='both')
+                    handler = AbortedErrorHandler(connect)
+                    handler.update_idletasks()
+                    sleep(5)
+                    handler.destroy()
                     break
 
         # create new thread and run connection monitor
@@ -102,20 +103,30 @@ class ConnectWidget(CTkFrame):
                 stream_port = int(ksp_stream_port)
             )
         except ConnectionRefusedError:
-            global refused_error
-            refused_error = ErrorHandler(connect)
-            refused_error.pack(pady = 5)
+            handler = RefusedErrorHandler(connect)
+            handler.update_idletasks()
+            sleep(5)
+            handler.destroy()
         else:
             save_connection()
             connection_monitor_thread()
             connect.pack_forget()
 
 
-class ErrorHandler(CTkFrame):
+class RefusedErrorHandler(CTkFrame):
     def __init__(self, master):
         super().__init__(master)
-        self.configure(border_color = 'red', border_width = 2)
-        self.label = CTkLabel(self, text = 'ERROR: Connection Refused').pack(padx = 10, pady = 5)
+        self.configure(border_color='red', border_width=2)
+        self.label = CTkLabel(self, text='ERROR: Connection Refused').pack(padx=10, pady=5)
+        self.pack(pady=10)
+
+
+class AbortedErrorHandler(CTkFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.configure(border_color='red', border_width=2)
+        self.label = CTkLabel(self, text='ERROR: Connection Aborted').pack(padx=10, pady=5)
+        self.pack(pady=10)
 
 
 class App(CTk):
@@ -126,7 +137,7 @@ class App(CTk):
         # connection screen
         global connect
         connect = ConnectWidget(self)
-        connect.pack(expand = True, fill = 'both')
+        connect.pack(expand=True, fill='both')
 
         # run
         self.mainloop()
@@ -137,19 +148,19 @@ class App(CTk):
 
         self.width = 450
         self.height = 600
-        self.minsize(width = self.width, height = self.height)
+        self.minsize(width=self.width, height=self.height)
 
         self.screen_width = self.winfo_screenwidth()
         self.screen_height = self.winfo_screenheight()
-        self.maxsize(width = self.screen_width, height = self.screen_height)
+        self.maxsize(width=self.screen_width, height=self.screen_height)
 
-        self.start_x = (self.screen_width/2) - (self.width/2)
-        self.start_y = (self.screen_height/2) - (self.height/2)
+        self.start_x = (self.screen_width / 2) - (self.width / 2)
+        self.start_y = (self.screen_height / 2) - (self.height / 2)
 
         self.geometry(f'{self.width}x{self.height}+{int(self.start_x)}+{int(self.start_y)}')
 
-        self.columnconfigure(0, weight = 1)
-        self.rowconfigure(0, weight = 1)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
 
 
 App()
