@@ -1,8 +1,10 @@
-from customtkinter import *
-from PIL import Image
+from configparser import ConfigParser
 from threading import Thread
 from time import sleep
-from configparser import ConfigParser
+
+from PIL import Image
+
+from customtkinter import *
 import krpc
 
 app_name = 'Kerbal Kompanion'
@@ -12,7 +14,7 @@ config_file = 'settings.ini'
 config.read(config_file)
 connection = config['connection']
 
-class ConnectWidget(CTkFrame):
+class Connection(CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         self.configure(fg_color='transparent')
@@ -26,6 +28,7 @@ class ConnectWidget(CTkFrame):
 
     # construct and return frame with entries and button
     def input(self):
+        # construct entry box
         def entry(placeholder, value):
             entry = CTkEntry(frame, width=250, placeholder_text=placeholder, justify='center')
             entry.pack(padx=20, pady=(0, 5))
@@ -53,7 +56,7 @@ class ConnectWidget(CTkFrame):
             text_color = 'black',
             fg_color = '#84bd08',
             hover_color = '#425e04',
-            command = ConnectWidget.connect)
+            command = Connection.connect)
         connect_button.pack(pady=(5, 15))
 
         return frame
@@ -64,7 +67,7 @@ class ConnectWidget(CTkFrame):
         ksp_rpc_port = rpc_port_entry.get()
         ksp_stream_port = stream_port_entry.get()
 
-        # save entry values to setting file
+        # save entry values to settings.ini
         def save_connection():
             connection['address'] = ksp_address
             connection['rpc_port'] = ksp_rpc_port
@@ -75,27 +78,98 @@ class ConnectWidget(CTkFrame):
 
             print('Settings saved')
 
-        # monitor connection to kRPC server
+        # monitor connection to kRPC server (runs in new thread)
         def connection_monitor():
             while True:
                 try:
                     ksp.krpc.get_status().version
                     sleep(5)
                 except ConnectionAbortedError:
-                    connect.pack(expand=True, fill='both')
-                    handler = AbortedErrorHandler(connect)
-                    handler.update_idletasks()
+                    app.connect.pack(expand=True, fill='both')
+                    handler = AbortedErrorHandler(app.connect)
+                    handler.update()
                     sleep(5)
                     handler.destroy()
                     break
 
-        # create new thread and run connection monitor
-        def connection_monitor_thread():
-            connection = Thread(name='connection_monitor', target=connection_monitor)
-            connection.daemon = True
-            connection.start()
+        # start connection monitor in new thread
+        def start_connection_monitor():
+            Thread(name='connection_monitor', target=connection_monitor, daemon=True).start()
+
+        # def get_current_scene():
+        #     current_scene = str(ksp.krpc.current_game_scene)
+        #     return current_scene
+
+        # returns current game mode
+        def get_game_mode():
+            game_mode = str(ksp.space_center.game_mode)
+            return game_mode
+
+        ########## DEFINE WIDGETS ##########
+        class AssetWidget(CTkFrame):
+            def __init__(self, master):
+                super().__init__(master)
+                self.configure(fg_color='transparent')
+
+                mode = get_game_mode()
+                print(mode)
+
+                if mode == 'GameMode.career':
+                    career_assets = ['funds', 'reputation', 'science']
+                    for i in career_assets:
+                        self.asset(i)
+                elif mode == 'GameMode.science_sandbox':
+                    self.asset('science')
+
+            def asset(self, asset_type):
+                size = 24
+                font_size = CTkFont(size=size)
+                icon_size = (size, size)
+
+                stream = ksp.add_stream(getattr, ksp.space_center, asset_type)
+
+                if asset_type == 'funds':
+                    asset_text = "{:,}".format(round(stream()))
+                elif asset_type == 'reputation':
+                    asset_text = round(stream(), 2)
+                elif asset_type == 'science':
+                    asset_text = "{:,}".format(stream())
+
+                asset_icon = CTkImage(Image.open('icons/icon_' + asset_type + '.png'), size=icon_size)
+
+                label = CTkLabel(
+                    self,
+                    text=asset_text,
+                    image=asset_icon,
+                    compound='left',
+                    font=font_size,
+                    padx=5,
+                    pady=5
+                )
+                label.pack(side='left', padx=10, pady=5)
+
+                def check_asset(x):
+                    def check_negative():
+                        if x < 0:
+                            label.configure(text_color='red')
+                        else:
+                            label.configure(text_color='white')
+
+                    if asset_type == 'funds':
+                        label.configure(text="{:,}".format(round(stream())))
+                        check_negative()
+                    elif asset_type == 'reputation':
+                        label.configure(text=round(stream(), 2))
+                        check_negative()
+                    elif asset_type == 'science':
+                        label.configure(text="{:,}".format(stream()))
+                        check_negative()
+
+                stream.add_callback(check_asset)
+
 
         try:
+            # establish connection to kRPC server
             ksp = krpc.connect(
                 name = app_name,
                 address = ksp_address,
@@ -103,21 +177,40 @@ class ConnectWidget(CTkFrame):
                 stream_port = int(ksp_stream_port)
             )
         except ConnectionRefusedError:
-            handler = RefusedErrorHandler(connect)
-            handler.update_idletasks()
+            handler = RefusedErrorHandler(app.connect)
+            handler.update()
             sleep(5)
             handler.destroy()
         else:
+            # save and monitor server connection
             save_connection()
-            connection_monitor_thread()
-            connect.pack_forget()
+            start_connection_monitor()
+
+            # hide connection screen
+            app.connect.pack_forget()
+
+            # maximize window
+            app.state('zoomed')
+            app.update()
+
+            # create main app frame where all widgets are added
+            global main_frame
+            main_frame = MainApp(app)
+            main_frame.pack(expand=True, fill=BOTH)
+
+            ########## ADD WIDGETS ##########
+
+            assets = AssetWidget(main_frame.top_bar)
+            assets.pack()
 
 
 class RefusedErrorHandler(CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         self.configure(border_color='red', border_width=2)
+
         self.label = CTkLabel(self, text='ERROR: Connection Refused').pack(padx=10, pady=5)
+
         self.pack(pady=10)
 
 
@@ -125,22 +218,34 @@ class AbortedErrorHandler(CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         self.configure(border_color='red', border_width=2)
+
         self.label = CTkLabel(self, text='ERROR: Connection Aborted').pack(padx=10, pady=5)
+
+        main_frame.destroy()
         self.pack(pady=10)
 
+# define frame to contain widgets
+class MainApp(CTkFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.configure(fg_color='transparent')
 
+        self.top_bar = CTkFrame(self)
+        self.top_bar.pack(padx=10, pady=10, fill=X)
+
+        self.main = CTkFrame(self, fg_color='transparent')
+        self.main.pack(expand=True, fill=BOTH)
+
+
+# main app window
 class App(CTk):
     def __init__(self):
         super().__init__()
         self.window_params()
 
         # connection screen
-        global connect
-        connect = ConnectWidget(self)
-        connect.pack(expand=True, fill='both')
-
-        # run
-        self.mainloop()
+        self.connect = Connection(self)
+        self.connect.pack(expand=True, fill='both')
 
     def window_params(self):
         self.title(app_name)
@@ -163,4 +268,5 @@ class App(CTk):
         self.rowconfigure(0, weight=1)
 
 
-App()
+app = App()
+app.mainloop()
